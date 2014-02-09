@@ -239,7 +239,7 @@ void printErrorOfSetKernelArg (const cl_int &err_code)
     }
 }
 
-void printErrorEnqueueKernel (const cl_int &err_code)
+void printErrorOfEnqueueKernel (const cl_int &err_code)
 {
     std::cerr << "Enqueues command to execute error code: ";
     switch (err_code) {
@@ -297,7 +297,7 @@ void printErrorEnqueueKernel (const cl_int &err_code)
     }
 }
 
-void printErrorFinish (const cl_int &err_code)
+void printErrorOfFinish (const cl_int &err_code)
 {
     std::cerr << "Wait until queue commands have been completed error code: ";
     switch (err_code) {
@@ -313,7 +313,7 @@ void printErrorFinish (const cl_int &err_code)
     }
 }
 
-void printErrorEnqueueMapBuffer (const cl_int &err_code)
+void printErrorOfEnqueueMapBuffer (const cl_int &err_code)
 {
     std::cerr << "Map region of buffer into host error code: ";
     switch (err_code) {
@@ -493,14 +493,14 @@ int main(int argc, char* argv[])
             size_t global_work_size = NWITEMS;
             err_code = clEnqueueNDRangeKernel(queue[j], kernel, 1, NULL, &global_work_size, NULL, 0, NULL, NULL);
             if (err_code != CL_SUCCESS) {
-                printErrorEnqueueKernel(err_code);
+                printErrorOfEnqueueKernel(err_code);
                 continue;
             }
 
             //Wait until queue commands have been completed
             err_code = clFinish(queue[j]);
             if (err_code != CL_SUCCESS) {
-                printErrorFinish(err_code);
+                printErrorOfFinish(err_code);
                 continue;
             }
 
@@ -508,7 +508,7 @@ int main(int argc, char* argv[])
             cl_uint* resultPtr;
             resultPtr = reinterpret_cast<cl_uint*>(clEnqueueMapBuffer(queue[j], buffer, CL_TRUE, CL_MAP_READ, 0, sizeof(cl_uint) * NWITEMS, 0, NULL, NULL, &err_code));
             if (err_code != CL_SUCCESS) {
-                printErrorEnqueueMapBuffer(err_code);
+                printErrorOfEnqueueMapBuffer(err_code);
                 continue;
             }
 
