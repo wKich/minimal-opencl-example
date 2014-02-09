@@ -356,9 +356,262 @@ void printErrorOfEnqueueMapBuffer (const cl_int &err_code)
     }
 }
 
+void printErrorOfGetDeviceInfo (const cl_int &err_code)
+{
+    std::cerr << "Get device info error code: ";
+    switch (err_code) {
+    case CL_INVALID_DEVICE:
+        std::cerr << "CL_INVALID_DEVICE\n";
+        break;
+    case CL_INVALID_VALUE:
+        std::cerr << "CL_INVALID_VALUE\n";
+        break;
+    case CL_OUT_OF_RESOURCES:
+        std::cerr << "CL_OUT_OF_RESOURCES\n";
+        break;
+    case CL_OUT_OF_HOST_MEMORY:
+        std::cerr << "CL_OUT_OF_HOST_MEMORY\n";
+        break;
+    }
+}
+
 void printDeviceInfo (const cl_device_id &device)
 {
+    cl_int err_code;
+
     //Get all device info with clGetDeviceInfo func (37 page in API Reference)
+    cl_device_type device_type;
+    err_code = clGetDeviceInfo(device, CL_DEVICE_TYPE, sizeof(cl_device_type), &device_type, NULL);
+    if (err_code != CL_SUCCESS) {
+        printErrorOfGetDeviceInfo(err_code);
+    } else {
+        std::cout << "Device type: ";
+        if (device_type & CL_DEVICE_TYPE_CPU)
+            std::cout << "CL_DEVICE_TYPE_CPU ";
+        if (device_type & CL_DEVICE_TYPE_GPU)
+            std::cout << "CL_DEVICE_TYPE_GPU ";
+        if (device_type & CL_DEVICE_TYPE_ACCELERATOR)
+            std::cout << "CL_DEVICE_TYPE_ACCELERATOR ";
+        if (device_type & CL_DEVICE_TYPE_DEFAULT)
+            std::cout << "CL_DEVICE_TYPE_DEFAULT ";
+#ifdef CL_DEVICE_TYPE_CUSTOM
+        if (device_type & CL_DEVICE_TYPE_CUSTOM)
+            std::cout << "CL_DEVICE_TYPE_CUSTOM ";
+#endif
+        std::cout << "\n";
+    }
+
+    cl_uint vendor_id;
+    err_code = clGetDeviceInfo(device, CL_DEVICE_VENDOR_ID, sizeof(cl_uint), &vendor_id, NULL);
+    if (err_code != CL_SUCCESS) {
+        printErrorOfGetDeviceInfo(err_code);
+    } else {
+        std::cout << "Vendor ID: " << vendor_id << "\n";
+    }
+
+    cl_uint max_compute_units;
+    err_code = clGetDeviceInfo(device, CL_DEVICE_MAX_COMPUTE_UNITS, sizeof(cl_uint), &max_compute_units, NULL);
+    if (err_code != CL_SUCCESS) {
+        printErrorOfGetDeviceInfo(err_code);
+    } else {
+        std::cout << "Maximum compute units: " << max_compute_units << "\n";
+    }
+
+    cl_uint max_work_item_dimensions;
+    err_code = clGetDeviceInfo(device, CL_DEVICE_MAX_WORK_ITEM_DIMENSIONS, sizeof(cl_uint), &max_work_item_dimensions, NULL);
+    if (err_code != CL_SUCCESS) {
+        printErrorOfGetDeviceInfo(err_code);
+    } else {
+        std::cout << "Maximum dimensions: " << max_work_item_dimensions << "\n";
+
+        size_t max_work_item_sizes[max_work_item_dimensions];
+        err_code = clGetDeviceInfo(device, CL_DEVICE_MAX_WORK_ITEM_SIZES, sizeof(size_t) * max_work_item_dimensions, &max_work_item_sizes, NULL);
+        if (err_code != CL_SUCCESS) {
+            printErrorOfGetDeviceInfo(err_code);
+        } else {
+            std::cout << "Maximum number of work-items in each dimensions: ";
+            for (cl_uint i = 0; i < max_work_item_dimensions; i++)
+                std::cout << max_work_item_sizes[i] << " ";
+            std::cout << "\n";
+        }
+    }
+
+    size_t max_work_group_size;
+    err_code = clGetDeviceInfo(device, CL_DEVICE_MAX_WORK_GROUP_SIZE, sizeof(size_t), &max_work_group_size, NULL);
+    if (err_code != CL_SUCCESS) {
+        printErrorOfGetDeviceInfo(err_code);
+    } else {
+        std::cout << "Maximum number work-items in work-group: " << max_work_group_size << "\n";
+    }
+
+    cl_uint preferred_vector_width_char;
+    err_code = clGetDeviceInfo(device, CL_DEVICE_PREFERRED_VECTOR_WIDTH_CHAR, sizeof(cl_uint), &preferred_vector_width_char, NULL);
+    if (err_code != CL_SUCCESS) {
+        printErrorOfGetDeviceInfo(err_code);
+    } else {
+        std::cout << "Preferred vector width char: " << preferred_vector_width_char << "\n";
+    }
+
+    cl_uint preferred_vector_width_short;
+    err_code = clGetDeviceInfo(device, CL_DEVICE_PREFERRED_VECTOR_WIDTH_SHORT, sizeof(cl_uint), &preferred_vector_width_short, NULL);
+    if (err_code != CL_SUCCESS) {
+        printErrorOfGetDeviceInfo(err_code);
+    } else {
+        std::cout << "Preferred vector width short: " << preferred_vector_width_short << "\n";
+    }
+
+    cl_uint preferred_vector_width_int;
+    err_code = clGetDeviceInfo(device, CL_DEVICE_PREFERRED_VECTOR_WIDTH_INT, sizeof(cl_uint), &preferred_vector_width_int, NULL);
+    if (err_code != CL_SUCCESS) {
+        printErrorOfGetDeviceInfo(err_code);
+    } else {
+        std::cout << "Preferred vector width int: " << preferred_vector_width_int << "\n";
+    }
+
+    cl_uint preferred_vector_width_long;
+    err_code = clGetDeviceInfo(device, CL_DEVICE_PREFERRED_VECTOR_WIDTH_LONG, sizeof(cl_uint), &preferred_vector_width_long, NULL);
+    if (err_code != CL_SUCCESS) {
+        printErrorOfGetDeviceInfo(err_code);
+    } else {
+        std::cout << "Preferred vector width log: " << preferred_vector_width_long << "\n";
+    }
+
+    cl_uint preferred_vector_width_float;
+    err_code = clGetDeviceInfo(device, CL_DEVICE_PREFERRED_VECTOR_WIDTH_FLOAT, sizeof(cl_uint), &preferred_vector_width_float, NULL);
+    if (err_code != CL_SUCCESS) {
+        printErrorOfGetDeviceInfo(err_code);
+    } else {
+        std::cout << "Preferred vector width float: " << preferred_vector_width_float << "\n";
+    }
+
+    cl_uint preferred_vector_width_double;
+    err_code = clGetDeviceInfo(device, CL_DEVICE_PREFERRED_VECTOR_WIDTH_DOUBLE, sizeof(cl_uint), &preferred_vector_width_double, NULL);
+    if (err_code != CL_SUCCESS) {
+        printErrorOfGetDeviceInfo(err_code);
+    } else {
+        std::cout << "Preferred vector width double: " << preferred_vector_width_double << "\n";
+    }
+
+    cl_uint preferred_vector_width_half;
+    err_code = clGetDeviceInfo(device, CL_DEVICE_PREFERRED_VECTOR_WIDTH_HALF, sizeof(cl_uint), &preferred_vector_width_half, NULL);
+    if (err_code != CL_SUCCESS) {
+        printErrorOfGetDeviceInfo(err_code);
+    } else {
+        std::cout << "Preferred vector width half " << preferred_vector_width_half << "\n";
+    }
+
+    cl_uint native_vector_width_char;
+    err_code = clGetDeviceInfo(device, CL_DEVICE_NATIVE_VECTOR_WIDTH_CHAR, sizeof(cl_uint), &native_vector_width_char, NULL);
+    if (err_code != CL_SUCCESS) {
+        printErrorOfGetDeviceInfo(err_code);
+    } else {
+        std::cout << "Native vector width char: " << native_vector_width_char << "\n";
+    }
+
+    cl_uint native_vector_width_short;
+    err_code = clGetDeviceInfo(device, CL_DEVICE_NATIVE_VECTOR_WIDTH_SHORT, sizeof(cl_uint), &native_vector_width_short, NULL);
+    if (err_code != CL_SUCCESS) {
+        printErrorOfGetDeviceInfo(err_code);
+    } else {
+        std::cout << "Native vector width short: " << native_vector_width_short << "\n";
+    }
+
+    cl_uint native_vector_width_int;
+    err_code = clGetDeviceInfo(device, CL_DEVICE_NATIVE_VECTOR_WIDTH_INT, sizeof(cl_uint), &native_vector_width_int, NULL);
+    if (err_code != CL_SUCCESS) {
+        printErrorOfGetDeviceInfo(err_code);
+    } else {
+        std::cout << "Native vector width int: " << native_vector_width_int << "\n";
+    }
+
+    cl_uint native_vector_width_long;
+    err_code = clGetDeviceInfo(device, CL_DEVICE_NATIVE_VECTOR_WIDTH_LONG, sizeof(cl_uint), &native_vector_width_long, NULL);
+    if (err_code != CL_SUCCESS) {
+        printErrorOfGetDeviceInfo(err_code);
+    } else {
+        std::cout << "Native vector width long: " << native_vector_width_long << "\n";
+    }
+
+    cl_uint native_vector_width_float;
+    err_code = clGetDeviceInfo(device, CL_DEVICE_NATIVE_VECTOR_WIDTH_FLOAT, sizeof(cl_uint), &native_vector_width_float, NULL);
+    if (err_code != CL_SUCCESS) {
+        printErrorOfGetDeviceInfo(err_code);
+    } else {
+        std::cout << "Native vector width float: " << native_vector_width_float << "\n";
+    }
+
+    cl_uint native_vector_width_double;
+    err_code = clGetDeviceInfo(device, CL_DEVICE_NATIVE_VECTOR_WIDTH_DOUBLE, sizeof(cl_uint), &native_vector_width_double, NULL);
+    if (err_code != CL_SUCCESS) {
+        printErrorOfGetDeviceInfo(err_code);
+    } else {
+        std::cout << "Native vector width double: " << native_vector_width_double << "\n";
+    }
+
+    cl_uint native_vector_width_half;
+    err_code = clGetDeviceInfo(device, CL_DEVICE_NATIVE_VECTOR_WIDTH_HALF, sizeof(cl_uint), &native_vector_width_half, NULL);
+    if (err_code != CL_SUCCESS) {
+        printErrorOfGetDeviceInfo(err_code);
+    } else {
+        std::cout << "Native vector width half: " << native_vector_width_half << "\n";
+    }
+
+    cl_uint max_clock_frequency;
+    err_code = clGetDeviceInfo(device, CL_DEVICE_MAX_CLOCK_FREQUENCY, sizeof(cl_uint), &max_clock_frequency, NULL);
+    if (err_code != CL_SUCCESS) {
+        printErrorOfGetDeviceInfo(err_code);
+    } else {
+        std::cout << "Maximum clock frequency: " << max_clock_frequency << "\n";
+    }
+
+    cl_uint address_bits;
+    err_code = clGetDeviceInfo(device, CL_DEVICE_ADDRESS_BITS, sizeof(cl_uint), &address_bits, NULL);
+    if (err_code != CL_SUCCESS) {
+        printErrorOfGetDeviceInfo(err_code);
+    } else {
+        std::cout << "Address bits: " << address_bits << "\n";
+    }
+
+    cl_ulong max_mem_alloc_size;
+    err_code = clGetDeviceInfo(device, CL_DEVICE_MAX_MEM_ALLOC_SIZE, sizeof(cl_ulong), &max_mem_alloc_size, NULL);
+    if (err_code != CL_SUCCESS) {
+        printErrorOfGetDeviceInfo(err_code);
+    } else {
+        std::cout << "Maximum memory object allocation size: " << max_mem_alloc_size << "\n";
+    }
+
+    cl_bool image_support;
+    err_code = clGetDeviceInfo(device, CL_DEVICE_IMAGE_SUPPORT, sizeof(cl_bool), &image_support, NULL);
+    if (err_code != CL_SUCCESS) {
+        printErrorOfGetDeviceInfo(err_code);
+    } else {
+        std::cout << "Image support: " << (image_support == CL_TRUE ? "True" : "False") << "\n";
+        if (image_support == CL_TRUE) {
+            cl_uint max_read_image_args;
+            err_code = clGetDeviceInfo(device, CL_DEVICE_MAX_READ_IMAGE_ARGS, sizeof(cl_uint), &max_read_image_args, NULL);
+            if (err_code != CL_SUCCESS) {
+                printErrorOfGetDeviceInfo(err_code);
+            } else {
+                std::cout << "Maximum number image objects can read: " << max_read_image_args << "\n";
+            }
+
+            cl_uint max_write_image_args;
+            err_code = clGetDeviceInfo(device, CL_DEVICE_MAX_WRITE_IMAGE_ARGS, sizeof(cl_uint), &max_write_image_args, NULL);
+            if (err_code != CL_SUCCESS) {
+                printErrorOfGetDeviceInfo(err_code);
+            } else {
+                std::cout << "Maximum number image objects can written: " << max_write_image_args << "\n";
+            }
+
+            size_t image2d_max_width;
+            err_code = clGetDeviceInfo(device, CL_DEVICE_IMAGE2D_MAX_WIDTH, sizeof(size_t), &image2d_max_width, NULL);
+            if (err_code != CL_SUCCESS) {
+                printErrorOfGetDeviceInfo(err_code);
+            } else {
+                std::cout << "Maximum width of 2D image: " << image2d_max_width << "\n";
+            }
+        }
+    }
 }
 
 void CL_CALLBACK printOpenCLErrorCallback (const char* errinfo, const void* private_info, size_t cb, void* user_data)
