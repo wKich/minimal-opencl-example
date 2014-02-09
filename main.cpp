@@ -381,146 +381,147 @@ int main(int argc, char* argv[])
     }
 
     //Get all exist platforms
-    cl_platform_id platform;
-    err_code = clGetPlatformIDs(num_platforms, &platform, NULL);
+    cl_platform_id platform[num_platforms];
+    err_code = clGetPlatformIDs(num_platforms, platform, NULL);
     if (err_code != CL_SUCCESS) {
         printErrorOfGetPlatformIDs(err_code);
         return err_code;
     }
 
-    //Get number of devices for platform (Each platform?)
-    cl_uint num_devices;
-    err_code = clGetDeviceIDs(platform, CL_DEVICE_TYPE_ALL, 0, NULL, &num_devices);
-    if (err_code != CL_SUCCESS) {
-        printErrorOfGetDeviceIDs(err_code);
-        return err_code;
-    }
+    for (cl_uint i = 0; i < num_platforms; i++) {
+        //Get number of devices for platform
+        cl_uint num_devices;
+        err_code = clGetDeviceIDs(platform[i], CL_DEVICE_TYPE_ALL, 0, NULL, &num_devices);
+        if (err_code != CL_SUCCESS) {
+            printErrorOfGetDeviceIDs(err_code);
+            return err_code;
+        }
 
-    //Get all exist devices
-    cl_device_id device;
-    err_code = clGetDeviceIDs(platform, CL_DEVICE_TYPE_ALL, num_devices, &device, NULL);
-    if (err_code != CL_SUCCESS) {
-        printErrorOfGetDeviceIDs(err_code);
-        return err_code;
-    }
+        //Get all exist devices
+        cl_device_id device[num_devices];
+        err_code = clGetDeviceIDs(platform[i], CL_DEVICE_TYPE_ALL, num_devices, device, NULL);
+        if (err_code != CL_SUCCESS) {
+            printErrorOfGetDeviceIDs(err_code);
+            return err_code;
+        }
 
-    //printDeviceInfo(device);
+        for (cl_uint j = 0; j < num_devices; j++) {
+            printDeviceInfo(device[j]);
+        }
 
-    //Create context
-    cl_context context = clCreateContext(NULL, num_devices, &device, printOpenCLErrorCallback, NULL, &err_code);
-    if (err_code != CL_SUCCESS) {
-        printErrorOfCreateContext(err_code);
-        return err_code;
-    }
+        //Create context
+        cl_context context = clCreateContext(NULL, num_devices, device, printOpenCLErrorCallback, NULL, &err_code);
+        if (err_code != CL_SUCCESS) {
+            printErrorOfCreateContext(err_code);
+            return err_code;
+        }
 
-    //Create command queue
-    cl_command_queue queue = clCreateCommandQueue(context, device, 0, &err_code);
-    if (err_code != CL_SUCCESS) {
-        printErrorOfCreateQueue(err_code);
-        clReleaseContext(context);
-        return err_code;
-    }
+        cl_command_queue queue[num_devices];
+        for (cl_uint j = 0; j < num_devices; j++) {
+            //Create command queue
+            queue[j] = clCreateCommandQueue(context, device[j], 0, &err_code);
+            if (err_code != CL_SUCCESS) {
+                printErrorOfCreateQueue(err_code);
+                for (cl_uint k = 0; k < j; k++)
+                    clReleaseCommandQueue(queue[k]);
+                clReleaseContext(context);
+                return err_code;
+            }
+        }
 
-    //Load OpenCL source code
-    QResource source(":/main.cl");
-    const char* sourcePtr = reinterpret_cast<const char*>(source.data());
-    const size_t sourceSize = source.size();
-    cl_program program = clCreateProgramWithSource(context, 1, &sourcePtr, &sourceSize, &err_code);
-    if (err_code != CL_SUCCESS) {
-        printErrorOfCreateProgram(err_code);
-        clReleaseCommandQueue(queue);
-        clReleaseContext(context);
-        return err_code;
-    }
+        //Load OpenCL source code
+        QResource source(":/main.cl");
+        const char* sourcePtr = reinterpret_cast<const char*>(source.data());
+        const size_t sourceSize = source.size();
+        cl_program program = clCreateProgramWithSource(context, 1, &sourcePtr, &sourceSize, &err_code);
+        if (err_code != CL_SUCCESS) {
+            printErrorOfCreateProgram(err_code);
+            for (cl_uint j = 0; j < num_devices; j++)
+                clReleaseCommandQueue(queue[j]);
+            clReleaseContext(context);
+            return err_code;
+        }
 
-    //WARNING!!!
-    //for me num_devices == 2 and program crash on this step. For num_devices == 1 all works!
-    num_devices = 1;
+        //Build program for device with NULL options and callback func
+        err_code = clBuildProgram(program, num_devices, device, NULL, NULL, NULL);
+        if (err_code != CL_SUCCESS) {
+            printErrorOfBuildProgram(err_code);
+            clReleaseProgram(program);
+            for (cl_uint j = 0; j < num_devices; j++)
+                clReleaseCommandQueue(queue[j]);
+            clReleaseContext(context);
+            return err_code;
+        }
 
-    //Build program for device with NULL options and callback func
-    err_code = clBuildProgram(program, num_devices, &device, NULL, NULL, NULL);
-    if (err_code != CL_SUCCESS) {
-        printErrorOfBuildProgram(err_code);
-        clReleaseProgram(program);
-        clReleaseCommandQueue(queue);
-        clReleaseContext(context);
-        return err_code;
-    }
+        //Create kernel
+        cl_kernel kernel = clCreateKernel(program, "memset", &err_code);
+        if (err_code != CL_SUCCESS) {
+            printErrorOfCreateKernel(err_code);
+            clReleaseProgram(program);
+            for (cl_uint j = 0; j < num_devices; j++)
+                clReleaseCommandQueue(queue[j]);
+            clReleaseContext(context);
+            return err_code;
+        }
 
-    //Create kernel
-    cl_kernel kernel = clCreateKernel(program, "memset", &err_code);
-    if (err_code != CL_SUCCESS) {
-        printErrorOfCreateKernel(err_code);
-        clReleaseProgram(program);
-        clReleaseCommandQueue(queue);
-        clReleaseContext(context);
-        return err_code;
-    }
+        //Create read/write buffer with items size
+        cl_mem buffer = clCreateBuffer(context, CL_MEM_READ_WRITE, NWITEMS * sizeof(cl_uint), NULL, &err_code);
+        if (err_code != CL_SUCCESS) {
+            printErrorOfCreateBuffer(err_code);
+            clReleaseKernel(kernel);
+            clReleaseProgram(program);
+            for (cl_uint j = 0; j < num_devices; j++)
+                clReleaseCommandQueue(queue[j]);
+            clReleaseContext(context);
+            return err_code;
+        }
 
-    //Create read/write buffer with items size
-    cl_mem buffer = clCreateBuffer(context, CL_MEM_READ_WRITE, NWITEMS * sizeof(cl_uint), NULL, &err_code);
-    if (err_code != CL_SUCCESS) {
-        printErrorOfCreateBuffer(err_code);
+        //Set first kernel function argument
+        err_code = clSetKernelArg(kernel, 0, sizeof(buffer), reinterpret_cast<void*>(&buffer));
+        if (err_code != CL_SUCCESS) {
+            printErrorOfSetKernelArg(err_code);
+            clReleaseKernel(kernel);
+            clReleaseProgram(program);
+            for (cl_uint j = 0; j < num_devices; j++)
+                clReleaseCommandQueue(queue[j]);
+            clReleaseContext(context);
+            return err_code;
+        }
+
+        for (cl_uint j = 0; j < num_devices; j++) {
+            //Enqueues command to execute kernel on device
+            size_t global_work_size = NWITEMS;
+            err_code = clEnqueueNDRangeKernel(queue[j], kernel, 1, NULL, &global_work_size, NULL, 0, NULL, NULL);
+            if (err_code != CL_SUCCESS) {
+                printErrorEnqueueKernel(err_code);
+                continue;
+            }
+
+            //Wait until queue commands have been completed
+            err_code = clFinish(queue[j]);
+            if (err_code != CL_SUCCESS) {
+                printErrorFinish(err_code);
+                continue;
+            }
+
+            //Map region of buffer into host
+            cl_uint* resultPtr;
+            resultPtr = reinterpret_cast<cl_uint*>(clEnqueueMapBuffer(queue[j], buffer, CL_TRUE, CL_MAP_READ, 0, sizeof(cl_uint) * NWITEMS, 0, NULL, NULL, &err_code));
+            if (err_code != CL_SUCCESS) {
+                printErrorEnqueueMapBuffer(err_code);
+                continue;
+            }
+
+            for (int k = 0; k < NWITEMS; k++)
+                std::cout << i << " " << j << " " << k << " " << resultPtr[k] << "\n";
+        }
+
         clReleaseKernel(kernel);
         clReleaseProgram(program);
-        clReleaseCommandQueue(queue);
+        for (cl_uint j = 0; j < num_devices; j++)
+            clReleaseCommandQueue(queue[j]);
         clReleaseContext(context);
-        return err_code;
     }
-
-    //Set first kernel function argument
-    err_code = clSetKernelArg(kernel, 0, sizeof(buffer), reinterpret_cast<void*>(&buffer));
-    if (err_code != CL_SUCCESS) {
-        printErrorOfSetKernelArg(err_code);
-        clReleaseKernel(kernel);
-        clReleaseProgram(program);
-        clReleaseCommandQueue(queue);
-        clReleaseContext(context);
-        return err_code;
-    }
-
-    //Enqueues command to execute kernel on device
-    size_t global_work_size = NWITEMS;
-    err_code = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, &global_work_size, NULL, 0, NULL, NULL);
-    if (err_code != CL_SUCCESS) {
-        printErrorEnqueueKernel(err_code);
-        clReleaseKernel(kernel);
-        clReleaseProgram(program);
-        clReleaseCommandQueue(queue);
-        clReleaseContext(context);
-        return err_code;
-    }
-
-    //Wait until queue commands have been completed
-    err_code = clFinish(queue);
-    if (err_code != CL_SUCCESS) {
-        printErrorFinish(err_code);
-        clReleaseKernel(kernel);
-        clReleaseProgram(program);
-        clReleaseCommandQueue(queue);
-        clReleaseContext(context);
-        return err_code;
-    }
-
-    //Map region of buffer into host
-    cl_uint* resultPtr;
-    resultPtr = reinterpret_cast<cl_uint*>(clEnqueueMapBuffer(queue, buffer, CL_TRUE, CL_MAP_READ, 0, sizeof(cl_uint) * NWITEMS, 0, NULL, NULL, &err_code));
-    if (err_code != CL_SUCCESS) {
-        printErrorEnqueueMapBuffer(err_code);
-        clReleaseKernel(kernel);
-        clReleaseProgram(program);
-        clReleaseCommandQueue(queue);
-        clReleaseContext(context);
-        return err_code;
-    }
-
-    for (int i = 0; i < NWITEMS; i++)
-        std::cout << i << " " << resultPtr[i] << "\n";
-
-    clReleaseKernel(kernel);
-    clReleaseProgram(program);
-    clReleaseCommandQueue(queue);
-    clReleaseContext(context);
 
     return 0;
 }
