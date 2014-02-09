@@ -361,7 +361,7 @@ void printDeviceInfo (const cl_device_id &device)
     //Get all device info with clGetDeviceInfo func (37 page in API Reference)
 }
 
-void printOpenCLErrorCallback (const char* errinfo, const void* private_info, size_t cb, void* user_data)
+void CL_CALLBACK printOpenCLErrorCallback (const char* errinfo, const void* private_info, size_t cb, void* user_data)
 {
     std::ostringstream buf;
     buf << errinfo << "\n";
